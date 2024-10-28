@@ -1,116 +1,89 @@
+import { WebSocket } from "ws";
 import {
   IAttackFeedbackData,
   IAttackStatus,
-  IFinishData,
   IRandomAttackData,
   IReqAttackData,
 } from "../../models/gameModels.ts";
+import { IShipCell, TEnemyShip } from "../../models/shipsModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
-import { TConnections } from "../../models/roomModels.ts";
+import { TConnections } from "../../models/connections.ts";
+import { finishGame } from "./finishGame.ts";
 import {
-  IAddShipsData,
-  IShipCell,
-  TSchemaOfEnemyShips,
-  TEnemyShip,
-} from "../../models/shipsModels.ts";
-import { createSchemaOfShottedEnemyShips } from "../../helpers/createScemaofShottedEnemyShips.ts";
-import {
-  sendDataToAdjiacentCell,
+  getAttackedCoordinates,
   sendToRoomClients,
-} from "../../helpers/sendData.ts";
-import { setTurn } from "./setTurn.ts";
-import { getAttachedCoordinates } from "../../helpers/generateCoord.ts";
-import { WebSocket } from "ws";
-
-let schemaOfEnemyShips: TSchemaOfEnemyShips | undefined;
-let numberEnemyShips: number | undefined;
+  sendDataToAdjiacentCell,
+  changeTurn,
+} from "../../helpers/index.ts";
 
 export const sendAttackFeedback = (
-  connections: TConnections,
+  roomConnections: TConnections,
   attackData: IReqAttackData | IRandomAttackData,
-  clientsShipsData: IAddShipsData[]
+  connections: TConnections
 ) => {
-  const { indexPlayer: attackingPlayer } = attackData;
-  const { x, y } = getAttachedCoordinates(attackData);
+  const { indexPlayer: attackingPlayerId } = attackData;
+  const { x, y } = getAttackedCoordinates(attackData);
 
-  const enemyShipsData: IAddShipsData = clientsShipsData.find(
-    (shipsData) => shipsData.indexPlayer !== attackingPlayer
+  const enemyPlayerId = Object.keys(roomConnections).find(
+    (key) => key !== attackingPlayerId
   )!;
+  let resStatus: IAttackStatus | undefined;
 
-  if (!numberEnemyShips) {
-    numberEnemyShips = enemyShipsData.ships.length;
-  }
-
-  if (!schemaOfEnemyShips) {
-    schemaOfEnemyShips = createSchemaOfShottedEnemyShips(enemyShipsData.ships);
-  }
-
-  let status: IAttackStatus | undefined;
-
-  const shottedShip: TEnemyShip | undefined = schemaOfEnemyShips.find(
-    (ship: TEnemyShip) =>
-      ship.find(
-        (shipCell: IShipCell) =>
-          shipCell.position.x === x && shipCell.position.y === y
-      )
+  const shottedShip: TEnemyShip | undefined = roomConnections[
+    attackingPlayerId
+  ].schemaOfEnemyShips.find((ship: TEnemyShip) =>
+    ship.find(
+      (shipCell: IShipCell) =>
+        shipCell.position.x === x && shipCell.position.y === y
+    )
   );
 
   if (!shottedShip) {
-    status = "miss";
+    resStatus = "miss";
   } else {
-    status = shottedShip.length === 1 ? "killed" : "shot";
-    const indexOfShottedShip = schemaOfEnemyShips.indexOf(shottedShip);
-    let shottedCell: IShipCell | undefined = shottedShip.find(
+    let shottedCell: IShipCell = shottedShip.find(
       (shipCell: IShipCell) =>
         shipCell.position.x === x && shipCell.position.y === y
+    )!;
+    const shottedShipAlreadyKilled = shottedShip.every(
+      (shipCell) => shipCell.status === "isKilled"
     );
-    if (shottedCell) {
+    if (shottedCell.status === "shotted") {
+      resStatus = "shot";
+    } else if (shottedShipAlreadyKilled) {
+      resStatus = "killed";
+    } else {
+      resStatus = shottedShip.length === 1 ? "killed" : "shot";
       shottedCell.status = "shotted";
-
-      const updatedShottedShip = shottedShip.map((shipCell: IShipCell) => {
-        if (shipCell.position.x === x && shipCell.position.y === y) {
-          return shottedCell as IShipCell;
-        }
-        return shipCell;
-      });
-      schemaOfEnemyShips[indexOfShottedShip] = updatedShottedShip;
-      const killedShip: TEnemyShip | undefined = schemaOfEnemyShips.find(
-        (ship) => ship.every((shipCell) => shipCell.status === "shotted")
+      const killedShip: TEnemyShip | undefined = roomConnections[
+        attackingPlayerId
+      ].schemaOfEnemyShips.find((ship) =>
+        ship.every((shipCell: IShipCell) => shipCell.status === "shotted")
       );
 
       if (killedShip) {
-        status = "killed";
-        numberEnemyShips--;
-        const indexOfKilledShip = schemaOfEnemyShips.indexOf(killedShip);
-        const updatedKilledShip: TEnemyShip = killedShip.map(
-          (shipCell: IShipCell) => {
-            return {
-              ...shipCell,
-              status: "isKilled",
-            };
-          }
-        );
-        schemaOfEnemyShips[indexOfKilledShip] = updatedKilledShip;
+        resStatus = "killed";
+        killedShip.forEach((shipCell) => (shipCell.status = "isKilled"));
       }
     }
   }
-  if (status && status !== "killed") {
+  if (resStatus && resStatus !== "killed") {
     const attackFeedbackData: IAttackFeedbackData = {
       position: { x, y },
-      currentPlayer: attackingPlayer,
-      status,
+      currentPlayer: attackingPlayerId,
+      status: resStatus,
     };
     const res = {
       type: EResType.ATTACK,
       data: JSON.stringify(attackFeedbackData),
       id: 0,
     };
-    sendToRoomClients(connections, res);
-  } else if (status === "killed") {
+    sendToRoomClients(roomConnections, res);
+  } else if (resStatus === "killed") {
     shottedShip?.forEach((shipCell: IShipCell) => {
       const attackFeedbackData: IAttackFeedbackData = {
         position: shipCell.position,
-        currentPlayer: attackingPlayer,
+        currentPlayer: attackingPlayerId,
         status: "killed",
       };
       const res = {
@@ -118,40 +91,26 @@ export const sendAttackFeedback = (
         data: JSON.stringify(attackFeedbackData),
         id: 0,
       };
-      sendToRoomClients(connections, res);
-
-      for (const index in connections) {
-        const socket: WebSocket = connections[index];
+      sendToRoomClients(roomConnections, res);
+      for (const index in roomConnections) {
+        const socket: WebSocket = roomConnections[index].socket;
         sendDataToAdjiacentCell(
           socket,
           shipCell.position,
           shottedShip,
-          attackingPlayer
+          attackingPlayerId
         );
       }
     });
   }
+  changeTurn(roomConnections, resStatus, attackingPlayerId, enemyPlayerId);
 
-  if (status === "killed" || status === "shot") {
-    setTurn(connections, attackingPlayer);
-  } else if (status === "miss") {
-    schemaOfEnemyShips = undefined;
-    setTurn(connections, enemyShipsData.indexPlayer);
-  }
-
-  if (numberEnemyShips === 0) {
-    const finishData: IFinishData = {
-      winPlayer: attackingPlayer,
-    };
-    //check
-    schemaOfEnemyShips = undefined;
-
-    const res = {
-      type: EResType.FINISH,
-      data: JSON.stringify(finishData),
-      id: 0,
-    };
-    sendToRoomClients(connections, res);
-    return attackingPlayer;
+  const allShipsKilled = roomConnections[
+    attackingPlayerId
+  ].schemaOfEnemyShips.every((ship: TEnemyShip) =>
+    ship.every((shipCell) => shipCell.status === "isKilled")
+  );
+  if (allShipsKilled) {
+    finishGame(roomConnections, connections, attackingPlayerId, enemyPlayerId);
   }
 };

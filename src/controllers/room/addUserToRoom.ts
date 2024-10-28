@@ -1,46 +1,62 @@
-import {
-  IAddUserToRoomReq,
-  IDataToAddUser,
-  IRoomData,
-  TConnections,
-} from "../../models/roomModels.ts";
+import { IAddUserToRoomReq, IRoomData } from "../../models/roomModels.ts";
+import { TConnections } from "../../models/connections.ts";
 import { updateRoom } from "./updateRoom.ts";
 import { createGame } from "./createGame.ts";
-import { ILoginResData } from "../../models/loginModels.ts";
+import { getRoomConnections } from "../../helpers/index.ts";
 
 export const addUserToRoom = (
   req: IAddUserToRoomReq,
-  room: IRoomData,
-  loginRes: ILoginResData,
-  connections: TConnections
+  connections: TConnections,
+  plaerToAddId: string,
+  rooms: IRoomData[]
 ) => {
-  const { data } = req;
-  const parsedData: IDataToAddUser = JSON.parse(data);
-  const indexRoom = parsedData.indexRoom;
+  const { indexRoom } = JSON.parse(req.data);
+  const room = rooms.find((room) => room.roomId === indexRoom);
 
-  const existedUser = room.roomUsers.find(
-    (user) => user.name === loginRes.name
-  );
-  if (existedUser) {
-    console.log("User with this name already in the room");
-    return;
-  }
-  const roomData: IRoomData = {
-    roomId: indexRoom,
-    roomUsers: [
-      ...room.roomUsers,
-      {
-        name: loginRes.name,
-        index: loginRes.index,
-      },
-    ],
-  };
+  if (room && room.roomUsers.length < 2) {
+    const existedUser = room.roomUsers.find(
+      (user) => user.index === plaerToAddId
+    );
+    if (existedUser) {
+      console.log("User with this name already in the room");
+      return;
+    }
+    connections[plaerToAddId].roomId = indexRoom;
 
-  if (roomData.roomUsers.length < 2) {
-    updateRoom([roomData]);
-  } else if (roomData.roomUsers.length === 2) {
-    createGame(connections);
-    updateRoom([]);
+    const updatedRoom: IRoomData = {
+      roomId: indexRoom,
+      roomUsers: [
+        ...room.roomUsers,
+        {
+          name: connections[plaerToAddId].name,
+          index: plaerToAddId,
+        },
+      ],
+    };
+
+    let updatedRooms: IRoomData[] = [];
+
+    if (updatedRoom.roomUsers.length < 2) {
+      updatedRooms = rooms.map((room) => {
+        if (room.roomId === indexRoom) {
+          return updatedRoom;
+        }
+        return room;
+      });
+    } else if (updatedRoom.roomUsers.length === 2) {
+      const roomConnections: TConnections = getRoomConnections(
+        connections,
+        indexRoom
+      );
+
+      createGame(roomConnections);
+      const indexOfTheRoom = rooms.indexOf(room);
+      updatedRooms.splice(indexOfTheRoom, 1);
+    }
+
+    updateRoom([...updatedRooms]);
+    return updatedRooms;
+  } else {
+    console.log("already 2 users in the room");
   }
-  return roomData;
 };

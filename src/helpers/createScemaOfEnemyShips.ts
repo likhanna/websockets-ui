@@ -6,7 +6,7 @@ import {
   TEnemyShip,
 } from "../models/shipsModels.ts";
 
-export const createSchemaOfShottedEnemyShips = (
+export const createSchemaOfEnemyShips = (
   ships: IShipsData[]
 ): TSchemaOfEnemyShips => {
   return ships.map((ship: IShipsData) => {
@@ -18,7 +18,7 @@ export const createSchemaOfShottedEnemyShips = (
       return [uniqueCell];
     } else {
       let shipCells: TEnemyShip = [];
-      const firstCell = {
+      const firstCell: IShipCell = {
         status: "alive",
         position: ship.position,
       };

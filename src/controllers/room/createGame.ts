@@ -1,17 +1,13 @@
-import {
-  ICreateGame,
-  ICreatedGameData,
-  TConnections,
-} from "../../models/roomModels.ts";
-import { EResType } from "../../models/reqAndResModels.ts";
 import { WebSocket } from "ws";
-import { generateIdx } from "../../helpers/generateIdx.ts";
-import { sendToClient } from "../../helpers/sendData.ts";
+import { ICreateGame, ICreatedGameData } from "../../models/roomModels.ts";
+import { EResType } from "../../models/reqAndResModels.ts";
+import { TConnections } from "../../models/connections.ts";
+import { generateIdx, sendToClient } from "../../helpers/index.ts";
 
-export const createGame = (connections: TConnections) => {
+export const createGame = (roomConnections: TConnections) => {
   const idGame = generateIdx();
-  for (const index in connections) {
-    const socket: WebSocket = connections[index];
+  for (const index in roomConnections) {
+    const socket: WebSocket = roomConnections[index].socket;
     const createdGameData: ICreatedGameData = {
       idGame,
       idPlayer: index,

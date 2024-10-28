@@ -3,7 +3,7 @@ import { wsServer } from "../ws_server/index.ts";
 import { EResType } from "../models/reqAndResModels.ts";
 import { IPosition, TEnemyShip } from "../models/shipsModels.ts";
 import { IAttackFeedbackData } from "../models/gameModels.ts";
-import { TConnections } from "../models/roomModels.ts";
+import { TConnections } from "../models/connections.ts";
 
 export const sendToAllClients = (message: any) => {
   wsServer.clients.forEach((client) => {
@@ -17,9 +17,9 @@ export const sendToClient = (client: WebSocket, message: any) => {
   client.send(JSON.stringify(message));
 };
 
-export const sendToRoomClients = (connections: TConnections, res: any) => {
-  for (const index in connections) {
-    const socket: WebSocket = connections[index];
+export const sendToRoomClients = (roomConnections: TConnections, res: any) => {
+  for (const index in roomConnections) {
+    const socket: WebSocket = roomConnections[index].socket;
     sendToClient(socket, res);
   }
 };

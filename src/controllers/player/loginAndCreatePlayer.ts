@@ -1,5 +1,4 @@
 import { WebSocket } from "ws";
-import { generateIdx } from "../../helpers/generateIdx.ts";
 import {
   ILoginReq,
   ILoginReqData,
@@ -7,28 +6,36 @@ import {
   ILoginResData,
 } from "../../models/loginModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
-import { updateRoom } from "../room/updateRoom.ts";
-import { updateWinners } from "./updateWinners.ts";
 import { IRoomData, IRoomUser } from "../../models/roomModels.ts";
-import { sendToClient } from "../../helpers/sendData.ts";
+import { sendToClient, generateIdx } from "../../helpers/index.ts";
+import { updateWinners } from "./updateWinners.ts";
+import { updateRoom } from "../index.ts";
 
 export const loginAndCreatePlayer = (
   req: ILoginReq,
   socket: WebSocket,
-  room?: IRoomData
+  rooms: IRoomData[]
 ) => {
   const { data } = req;
   const playerData: ILoginReqData = JSON.parse(data);
   const name = playerData.name;
   const playerIndex = generateIdx();
 
-  const existedUser: IRoomUser | undefined = room?.roomUsers.find(
-    (user) => user.name === name
-  );
+  // const existedUser: IRoomUser | undefined = room?.roomUsers.find(user => user.name === name);
+  if (rooms.length > 0) {
+    const roomWithSameUser: IRoomData | undefined = rooms.find((room) =>
+      room.roomUsers.find((user) => user.name === name)
+    );
 
-  if (existedUser) {
-    console.log("User with the same name already exists");
-    return;
+    // if (existedUser) {
+    //     console.log("User with the same name already exists");
+    //     return;
+    // }
+
+    if (roomWithSameUser) {
+      console.log("User with the same name already in the room");
+      return;
+    }
   }
 
   const resData: ILoginResData = {
@@ -46,8 +53,10 @@ export const loginAndCreatePlayer = (
 
   sendToClient(socket, res);
 
-  !room ? updateRoom([]) : updateRoom([room]);
+  // !room ? updateRoom([]) : updateRoom([room]);
 
+  // rooms.length === 0 ? updateRoom([]) : updateRoom([...rooms]);
+  updateRoom([...rooms]);
   updateWinners([]);
 
   return JSON.parse(res.data);

@@ -10,7 +10,7 @@ const generateRandomCoordinates = () => {
   return { x, y };
 };
 
-export const getAttachedCoordinates = (
+export const getAttackedCoordinates = (
   attackData: IReqAttackData | IRandomAttackData
 ) => {
   let x: number;

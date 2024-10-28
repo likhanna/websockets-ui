@@ -1,13 +1,13 @@
-import { generateIdx } from "../../helpers/generateIdx.ts";
+import { generateIdx } from "../../helpers/index.ts";
 import { IRoomData } from "../../models/roomModels.ts";
 import { updateRoom } from "./updateRoom.ts";
 
-export const createRoom = () => {
+export const createRoom = (rooms: IRoomData[]) => {
   const roomId = generateIdx();
   const newRoomData: IRoomData = {
     roomId,
     roomUsers: [],
   };
-  updateRoom([newRoomData]);
+  updateRoom([...rooms, newRoomData]);
   return newRoomData;
 };
