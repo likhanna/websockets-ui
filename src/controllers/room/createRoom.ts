@@ -1,18 +1,13 @@
 import { generateIdx } from "../../helpers/generateIdx.ts";
-import { EResType } from "../../models/reqAndResModels.ts";
-import { IRoomData, IUpdateRoom } from "../../models/roomModels.ts";
+import { IRoomData } from "../../models/roomModels.ts";
+import { updateRoom } from "./updateRoom.ts";
 
-export const createRoom = (): IUpdateRoom => {
+export const createRoom = () => {
   const roomId = generateIdx();
-
   const newRoomData: IRoomData = {
     roomId,
     roomUsers: [],
   };
-
-  return {
-    type: EResType.UPDATE_ROOM,
-    data: JSON.stringify([newRoomData]),
-    id: 0,
-  };
+  updateRoom([newRoomData]);
+  return newRoomData;
 };
