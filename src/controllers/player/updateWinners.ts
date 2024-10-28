@@ -1,6 +1,6 @@
 import { IUpdateWinners, IWinnerData } from "../../models/winnerModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
-import { sendToAllClients } from "../../ws_server/index.ts";
+import { sendToAllClients } from "../../helpers/sendData.ts";
 
 export const updateWinners = (winnersData: IWinnerData[]) => {
   const res: IUpdateWinners = {

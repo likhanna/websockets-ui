@@ -9,8 +9,8 @@ import {
 import { EResType } from "../../models/reqAndResModels.ts";
 import { updateRoom } from "../room/updateRoom.ts";
 import { updateWinners } from "./updateWinners.ts";
-import { IRoomData } from "../../models/roomModels.ts";
-import { sendToClient } from "../../ws_server/index.ts";
+import { IRoomData, IRoomUser } from "../../models/roomModels.ts";
+import { sendToClient } from "../../helpers/sendData.ts";
 
 export const loginAndCreatePlayer = (
   req: ILoginReq,
@@ -18,11 +18,13 @@ export const loginAndCreatePlayer = (
   room?: IRoomData
 ) => {
   const { data } = req;
-  const parsedData: ILoginReqData = JSON.parse(data);
-  const name = parsedData.name;
+  const playerData: ILoginReqData = JSON.parse(data);
+  const name = playerData.name;
   const playerIndex = generateIdx();
 
-  const existedUser = room?.roomUsers.find((user) => user.name === name);
+  const existedUser: IRoomUser | undefined = room?.roomUsers.find(
+    (user) => user.name === name
+  );
 
   if (existedUser) {
     console.log("User with the same name already exists");
@@ -45,6 +47,7 @@ export const loginAndCreatePlayer = (
   sendToClient(socket, res);
 
   !room ? updateRoom([]) : updateRoom([room]);
+
   updateWinners([]);
 
   return JSON.parse(res.data);

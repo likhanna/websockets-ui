@@ -8,11 +8,13 @@ import { addUserToRoom } from "../controllers/room/addUserToRoom.ts";
 import { addShips } from "../controllers/ships/addShips.ts";
 import { IAddShipsData } from "../models/shipsModels.ts";
 import { attack } from "../controllers/game/attack.ts";
+import { updateWinnersDashboard } from "../helpers/updateWinnersDashboard.ts";
 
 let loginRes: ILoginResData;
 let room: IRoomData;
 const clientsShipsData: IAddShipsData[] = [];
 const connections: { [key: string]: WebSocket } = {};
+const loginPlayersData: ILoginResData[] = [];
 
 export const handleRequest = (req: ReqType, socket: WebSocket) => {
   switch (req.type) {
@@ -20,6 +22,7 @@ export const handleRequest = (req: ReqType, socket: WebSocket) => {
       room
         ? (loginRes = loginAndCreatePlayer(req, socket, room))
         : (loginRes = loginAndCreatePlayer(req, socket));
+      loginPlayersData.push(loginRes);
       break;
     case EReqType.CREATE_ROOM: {
       const roomData = createRoom();
@@ -40,11 +43,11 @@ export const handleRequest = (req: ReqType, socket: WebSocket) => {
       addShips(clientsShipsData, connections);
       break;
     }
-    case EReqType.ATTACK:
-      attack(req, clientsShipsData, connections);
-      break;
-    case EReqType.RANDOM_ATTACK:
-      attack(req, clientsShipsData, connections);
+    case EReqType.ATTACK || EReqType.RANDOM_ATTACK:
+      const winnerId = attack(req, clientsShipsData, connections);
+      if (winnerId) {
+        updateWinnersDashboard(winnerId, loginPlayersData);
+      }
       break;
   }
 };

@@ -1,21 +1,27 @@
 import { WebSocket } from "ws";
+import { wsServer } from "../ws_server/index.ts";
 import { EResType } from "../models/reqAndResModels.ts";
 import { IPosition, TEnemyShip } from "../models/shipsModels.ts";
 import { IAttackFeedbackData } from "../models/gameModels.ts";
-import { sendToClient } from "../ws_server/index.ts";
+import { TConnections } from "../models/roomModels.ts";
 
-export const sendData = (
-  socket: WebSocket,
-  resType: EResType,
-  dataToSend: any,
-  callback: any
-) => {
-  const res = {
-    type: resType,
-    data: JSON.stringify(dataToSend),
-    id: 0,
-  };
-  callback(socket, res);
+export const sendToAllClients = (message: any) => {
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      sendToClient(client, message);
+    }
+  });
+};
+
+export const sendToClient = (client: WebSocket, message: any) => {
+  client.send(JSON.stringify(message));
+};
+
+export const sendToRoomClients = (connections: TConnections, res: any) => {
+  for (const index in connections) {
+    const socket: WebSocket = connections[index];
+    sendToClient(socket, res);
+  }
 };
 
 export const sendDataToAdjiacentCell = (
@@ -42,7 +48,13 @@ export const sendDataToAdjiacentCell = (
           currentPlayer: attackingPlayer,
           status: "miss",
         };
-        sendData(socket, EResType.ATTACK, missFeedbackData, sendToClient);
+
+        const res = {
+          type: EResType.ATTACK,
+          data: JSON.stringify(missFeedbackData),
+          id: 0,
+        };
+        sendToClient(socket, res);
       }
     }
   }

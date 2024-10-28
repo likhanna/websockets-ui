@@ -6,7 +6,7 @@ import {
   IStartGameData,
 } from "../../models/shipsModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
-import { sendToClient } from "../../ws_server/index.ts";
+import { sendToClient } from "../../helpers/sendData.ts";
 
 export const startGame = (
   connections: TConnections,

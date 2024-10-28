@@ -4,7 +4,7 @@ import {
   IShipsData,
   TSchemaOfEnemyShips,
   TEnemyShip,
-} from "../../models/shipsModels.ts";
+} from "../models/shipsModels.ts";
 
 export const createSchemaOfShottedEnemyShips = (
   ships: IShipsData[]

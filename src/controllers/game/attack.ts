@@ -14,5 +14,10 @@ export const attack = (
 ) => {
   const { data } = req;
   const parsedAttackData: IReqAttackData = JSON.parse(data);
-  sendAttackFeedback(connections, parsedAttackData, clientsShipsData);
+  const winnerId = sendAttackFeedback(
+    connections,
+    parsedAttackData,
+    clientsShipsData
+  );
+  return winnerId;
 };

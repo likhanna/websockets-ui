@@ -39,7 +39,7 @@ export const addUserToRoom = (
   if (roomData.roomUsers.length < 2) {
     updateRoom([roomData]);
   } else if (roomData.roomUsers.length === 2) {
-    createGame(connections, roomData.roomUsers);
+    createGame(connections);
     updateRoom([]);
   }
   return roomData;

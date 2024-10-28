@@ -1,20 +1,16 @@
 import {
   ICreateGame,
   ICreatedGameData,
-  IRoomUser,
   TConnections,
 } from "../../models/roomModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
-import { sendToClient } from "../../ws_server/index.ts";
 import { WebSocket } from "ws";
 import { generateIdx } from "../../helpers/generateIdx.ts";
+import { sendToClient } from "../../helpers/sendData.ts";
 
-export const createGame = (
-  connections: TConnections,
-  roomUsers: IRoomUser[]
-) => {
+export const createGame = (connections: TConnections) => {
   const idGame = generateIdx();
-  roomUsers.forEach(({ index }) => {
+  for (const index in connections) {
     const socket: WebSocket = connections[index];
     const createdGameData: ICreatedGameData = {
       idGame,
@@ -26,5 +22,5 @@ export const createGame = (
       id: 0,
     };
     sendToClient(socket, res);
-  });
+  }
 };
