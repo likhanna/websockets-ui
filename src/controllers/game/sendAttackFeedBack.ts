@@ -2,6 +2,8 @@ import { WebSocket } from "ws";
 import {
   IAttackFeedbackData,
   IAttackStatus,
+  IFinishData,
+  IRandomAttackData,
   IReqAttackData,
 } from "../../models/gameModels.ts";
 import { EResType } from "../../models/reqAndResModels.ts";
@@ -16,21 +18,31 @@ import {
 import { createSchemaOfShottedEnemyShips } from "./createScemaofShottedEnemyShips.ts";
 import { sendData, sendDataToAdjiacentCell } from "../../helpers/sendData.ts";
 import { setTurn } from "./setTurn.ts";
+import { getAttachedCoordinates } from "../../helpers/generateCoord.ts";
 
 let schemaOfEnemyShips: TSchemaOfEnemyShips | undefined;
+let numberEnemyShips: number | undefined;
 
 export const sendAttackFeedback = (
   connections: TConnections,
-  attackData: IReqAttackData,
+  attackData: IReqAttackData | IRandomAttackData,
   clientsShipsData: IAddShipsData[]
 ) => {
-  const { indexPlayer: attackingPlayer, x, y } = attackData;
+  const { indexPlayer: attackingPlayer } = attackData;
+  const { x, y } = getAttachedCoordinates(attackData);
+
   const enemyShipsData: IAddShipsData = clientsShipsData.find(
     (shipsData) => shipsData.indexPlayer !== attackingPlayer
   )!;
+
+  if (!numberEnemyShips) {
+    numberEnemyShips = enemyShipsData.ships.length;
+  }
+
   if (!schemaOfEnemyShips) {
     schemaOfEnemyShips = createSchemaOfShottedEnemyShips(enemyShipsData.ships);
   }
+
   let status: IAttackStatus | undefined;
 
   const shottedShip: TEnemyShip | undefined = schemaOfEnemyShips.find(
@@ -66,6 +78,7 @@ export const sendAttackFeedback = (
 
       if (killedShip) {
         status = "killed";
+        numberEnemyShips--;
         const indexOfKilledShip = schemaOfEnemyShips.indexOf(killedShip);
         const updatedKilledShip: TEnemyShip = killedShip.map(
           (shipCell: IShipCell) => {
@@ -107,6 +120,16 @@ export const sendAttackFeedback = (
         );
       }
     });
+  }
+
+  if (numberEnemyShips === 0) {
+    const finishData: IFinishData = {
+      winPlayer: attackingPlayer,
+    };
+    for (const index in connections) {
+      const socket: WebSocket = connections[index];
+      sendData(socket, EResType.FINISH, finishData, sendToClient);
+    }
   }
 
   if (status === "killed" || status === "shot") {

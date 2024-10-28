@@ -1,10 +1,14 @@
-import { IAttackReq, IReqAttackData } from "../../models/gameModels.ts";
+import {
+  IAttackReq,
+  IRandomAttackReq,
+  IReqAttackData,
+} from "../../models/gameModels.ts";
 import { sendAttackFeedback } from "./sendAttackFeedBack.ts";
 import { IAddShipsData } from "../../models/shipsModels.ts";
 import { TConnections } from "../../models/roomModels.ts";
 
 export const attack = (
-  req: IAttackReq,
+  req: IAttackReq | IRandomAttackReq,
   clientsShipsData: IAddShipsData[],
   connections: TConnections
 ) => {
