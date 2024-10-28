@@ -10,12 +10,21 @@ import {
 } from "../models/roomModels.ts";
 import { addUserToRoom } from "../controllers/room/addUserToRoom.ts";
 import { addShips } from "../controllers/ships/addShips.ts";
-import { IAddShipsReq } from "../models/shipsModels.ts";
+import { IAddShipsData, IAddShipsReq } from "../models/shipsModels.ts";
+import { attack } from "../controllers/game/attack.ts";
+import { IAttackReq } from "../models/gameModels.ts";
 
-type ReqTypes = ILoginReq | ICreateRoomReq | IAddUserToRoomReq | IAddShipsReq;
+type ReqTypes =
+  | ILoginReq
+  | ICreateRoomReq
+  | IAddUserToRoomReq
+  | IAddShipsReq
+  | IAttackReq;
 
 let loginRes: ILoginResData;
 let room: IRoomData;
+const clientsShipsData: IAddShipsData[] = [];
+const connections: { [key: string]: WebSocket } = {};
 
 export const handleRequest = (req: ReqTypes, socket: WebSocket) => {
   switch (req.type) {
@@ -30,14 +39,22 @@ export const handleRequest = (req: ReqTypes, socket: WebSocket) => {
       break;
     }
     case EReqType.ADD_USER_TO_ROOM: {
-      const roomData = addUserToRoom(req, room, loginRes);
+      connections[loginRes.index] = socket;
+      const roomData = addUserToRoom(req, room, loginRes, connections);
       if (roomData) {
         room = { ...roomData };
       }
       break;
     }
-    case EReqType.ADD_SHIPS:
-      addShips(req);
+    case EReqType.ADD_SHIPS: {
+      const shipsData: IAddShipsData = JSON.parse(req.data);
+      clientsShipsData.push(shipsData);
+      addShips(clientsShipsData, connections);
+      break;
+    }
+
+    case EReqType.ATTACK:
+      attack(req, clientsShipsData, connections);
       break;
   }
 };

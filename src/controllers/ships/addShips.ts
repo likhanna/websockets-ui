@@ -1,21 +1,15 @@
-import { EResType } from "../../models/reqAndResModels.ts";
-import {
-  IAddShipsReq,
-  IStartGame,
-  IStartGameData,
-} from "../../models/shipsModels.ts";
-import { sendToAllClients } from "../../ws_server/index.ts";
+import { IAddShipsData } from "../../models/shipsModels.ts";
+import { startGame } from "./startGame.ts";
+import { setTurn } from "../game/setTurn.ts";
+import { TConnections } from "../../models/roomModels.ts";
 
-export const addShips = (req: IAddShipsReq) => {
-  const { ships, indexPlayer } = JSON.parse(req.data);
-  const startGameData: IStartGameData = {
-    ships: [...ships],
-    currentPlayerIndex: indexPlayer,
-  };
-  const res: IStartGame = {
-    type: EResType.START_GAME,
-    data: JSON.stringify(startGameData),
-    id: 0,
-  };
-  sendToAllClients(res);
+export const addShips = (
+  clientsShipsData: IAddShipsData[],
+  connections: TConnections
+) => {
+  if (clientsShipsData.length === 2) {
+    startGame(connections, clientsShipsData);
+    const clientsIndexes = clientsShipsData.map((data) => data.indexPlayer);
+    setTurn(connections, clientsIndexes[0]);
+  }
 };

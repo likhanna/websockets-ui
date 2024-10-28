@@ -2,6 +2,7 @@ import {
   IAddUserToRoomReq,
   IDataToAddUser,
   IRoomData,
+  TConnections,
 } from "../../models/roomModels.ts";
 import { updateRoom } from "./updateRoom.ts";
 import { createGame } from "./createGame.ts";
@@ -10,7 +11,8 @@ import { ILoginResData } from "../../models/loginModels.ts";
 export const addUserToRoom = (
   req: IAddUserToRoomReq,
   room: IRoomData,
-  loginRes: ILoginResData
+  loginRes: ILoginResData,
+  connections: TConnections
 ) => {
   const { data } = req;
   const parsedData: IDataToAddUser = JSON.parse(data);
@@ -37,7 +39,7 @@ export const addUserToRoom = (
   if (roomData.roomUsers.length < 2) {
     updateRoom([roomData]);
   } else if (roomData.roomUsers.length === 2) {
-    createGame(loginRes.index);
+    createGame(connections, roomData.roomUsers);
     updateRoom([]);
   }
   return roomData;

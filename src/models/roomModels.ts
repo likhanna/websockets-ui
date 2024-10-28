@@ -1,4 +1,6 @@
+import { WebSocket } from "ws";
 import { EReqType, EResType } from "./reqAndResModels.ts";
+import { IAddShipsData, IShipsData } from "./shipsModels.ts";
 
 export interface ICreateRoomReq {
   type: EReqType.CREATE_ROOM;
@@ -40,3 +42,7 @@ export interface ICreateGame {
   data: string;
   id: 0;
 }
+
+export type TConnections = {
+  [key: string]: WebSocket;
+};
