@@ -10,15 +10,7 @@
 
 ## Usage
 
-**Development**
-
 `npm run start:dev`
-
-- App served @ `http://localhost:8181`
-
-**Production**
-
-`npm run start`
 
 - App served @ `http://localhost:8181`
 
